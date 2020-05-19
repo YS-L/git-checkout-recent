@@ -1,6 +1,13 @@
 use git2::Repository;
 use git2::BranchType;
 
+struct BranchRecord {
+    name: String,
+    commit_sha: String,
+    time_seconds: i64,
+    summary: String,
+}
+
 fn main() {
 
     let repo = match Repository::open("/home/liauys/Code/test-repo") {
@@ -8,27 +15,58 @@ fn main() {
         Err(e) => panic!("failed to init: {}", e),
     };
 
-    let branches = match repo.branches(Some(BranchType::Local)) {
+    let mut records: Vec<BranchRecord> = Vec::new();
+
+    match repo.branches(Some(BranchType::Local)) {
         Ok(branches) => for branch in branches {
             match branch {
                 Ok((branch, _)) => {
+                    let mut is_valid = true;
+
+                    let mut branch_name = String::from("unknown");
+                    let mut commit_sha = String::from("unknown");
+                    let mut time_seconds = 0;
+                    let mut summary = String::from("unknown");
+
                     match branch.name() {
                         Ok(name) => if let Some(name) = name {
                             println!("branch name: {}", name);
+                            branch_name = name.to_string();
                         },
-                        Err(e) => println!("branch name error: {}", e),
-                    }
+                        Err(e) => {
+                            println!("branch name error: {}", e);
+                            is_valid = false;
+                        },
+                    };
+
                     let reference = branch.get();
                     match reference.peel_to_commit() {
                         Ok(commit) => {
+                            commit_sha = commit.id().to_string();
+                            time_seconds = commit.time().seconds();
                             println!("commit: {} {}", commit.id(), commit.time().seconds());
-                            if let Some(summary) = commit.summary() {
-                                println!("{}", summary);
+                            if let Some(s) = commit.summary() {
+                                println!("{}", s);
+                                summary = s.to_string();
                             }
                         },
-                        Err(e) => println!("error getting commit: {}", e),
+                        Err(e) => {
+                            println!("error getting commit: {}", e);
+                            is_valid = false;
+                        },
                     }
                     println!("--------------------");
+
+                    if is_valid {
+                        let record = BranchRecord {
+                            name: branch_name,
+                            commit_sha: commit_sha,
+                            time_seconds: time_seconds,
+                            summary: summary,
+                        };
+
+                        records.push(record);
+                    }
                 }
                 Err(e) => println!("error in branch: {}", e),
             }
