@@ -1,12 +1,19 @@
 use git2::Repository;
 use git2::BranchType;
 use git2::Branch;
+use std::fmt;
 
 struct BranchRecord {
     name: String,
     commit_sha: String,
     time_seconds: i64,
     summary: String,
+}
+
+impl fmt::Display for BranchRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Branch({}, {}, {})", self.name, self.commit_sha, self.summary)
+    }
 }
 
 fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
@@ -20,7 +27,6 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
 
     match branch.name() {
         Ok(name) => if let Some(name) = name {
-            println!("branch name: {}", name);
             branch_name = name.to_string();
         },
         Err(e) => {
@@ -34,9 +40,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
         Ok(commit) => {
             commit_sha = commit.id().to_string();
             time_seconds = commit.time().seconds();
-            println!("commit: {} {}", commit.id(), commit.time().seconds());
             if let Some(s) = commit.summary() {
-                println!("{}", s);
                 summary = s.to_string();
             }
         },
@@ -45,7 +49,6 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
             is_valid = false;
         },
     }
-    println!("--------------------");
 
     if is_valid {
         let record = BranchRecord {
@@ -89,6 +92,12 @@ fn main() {
         Err(e) => panic!("failed to init: {}", e),
     };
 
-    let records = extract_local_branches(&repo);
+    let mut records = extract_local_branches(&repo);
+
+    records.sort_by(|a, b| b.time_seconds.cmp(&a.time_seconds));
+
+    for rec in records {
+        println!("{}", rec);
+    }
 
 }
