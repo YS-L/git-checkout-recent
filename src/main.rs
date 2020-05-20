@@ -71,7 +71,7 @@ impl fmt::Display for BranchRecord {
 
 fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> (Vec<Vec<&str>>, Vec<&str>) {
     let mut data = vec![];
-    let header = vec!["Branch", "Last Commit", "Summary"];
+    let header = vec!["Name", "Last Commit", "Summary"];
     for r in records {
         let row = vec![
             r.name.as_str(),
@@ -183,13 +183,13 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<Option<&Branch
                 .iter()
                 .map(|i| Row::StyledData(i.iter(), normal_style));
             let t = Table::new(header.iter(), rows)
-                .block(Block::default().borders(Borders::ALL).title("Table"))
+                .block(Block::default().borders(Borders::ALL).title("Recent branches"))
                 .highlight_style(selected_style)
                 .highlight_symbol(">> ")
                 .widths(&[
-                    Constraint::Percentage(50),
                     Constraint::Length(30),
-                    Constraint::Max(10),
+                    Constraint::Length(50),
+                    Constraint::Percentage(50),
                 ]);
             f.render_stateful_widget(t, rects[0], &mut table.state);
         })?;
@@ -240,6 +240,6 @@ fn main() {
             Some(branch_record) => println!("Selected branch: {}", branch_record.name),
             _ => println!("Selected nothing"),
         },
-        Err(e) => println!("error getting input: {}", e),
+        Err(e) => println!("error rendering branch selection: {}", e),
     };
 }
