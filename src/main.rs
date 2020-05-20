@@ -152,7 +152,7 @@ fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
     records
 }
 
-fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<(), Box<dyn Error>> {
+fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<Option<&BranchRecord>, Box<dyn Error>> {
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -165,6 +165,8 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<(), Box<dyn Er
 
     let (table_data, header) = get_table_data_from_branch_records(&records);
     let mut table = StatefulTable::new(&table_data);
+
+    let mut selected = None;
 
     // Input
     loop {
@@ -203,15 +205,22 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<(), Box<dyn Er
                 Key::Up => {
                     table.previous();
                 }
+                Key::Char('\n') => {
+                    selected = table.state.selected();
+                    break;
+                }
                 _ => {}
             }
         };
     }
 
-    Ok(())
+    match selected {
+        Some(row) => return Ok(Some(records.get(row).unwrap())),
+        _ => return Ok(None),
+    };
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
 
     let repo = match Repository::open("/home/liauys/Code/test-repo") {
         Ok(repo) => repo,
@@ -226,5 +235,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", rec);
     };
 
-    render_branch_selection(&records)
+    match render_branch_selection(&records) {
+        Ok(res) => match(res) {
+            Some(branch_record) => println!("Selected branch: {}", branch_record.name),
+            _ => println!("Selected nothing"),
+        },
+        Err(e) => println!("error getting input: {}", e),
+    };
 }
