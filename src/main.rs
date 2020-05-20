@@ -69,8 +69,9 @@ impl fmt::Display for BranchRecord {
     }
 }
 
-fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> Vec<Vec<&str>>{
+fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> (Vec<Vec<&str>>, Vec<&str>) {
     let mut data = vec![];
+    let header = vec!["Branch", "Last Commit", "Summary"];
     for r in records {
         let row = vec![
             r.name.as_str(),
@@ -79,7 +80,7 @@ fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> Vec<Vec<&s
         ];
         data.push(row);
     }
-    return data;
+    return (data, header);
 }
 
 fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
@@ -162,7 +163,7 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<(), Box<dyn Er
 
     let events = Events::new();
 
-    let table_data = get_table_data_from_branch_records(&records);
+    let (table_data, header) = get_table_data_from_branch_records(&records);
     let mut table = StatefulTable::new(&table_data);
 
     // Input
@@ -175,7 +176,6 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<(), Box<dyn Er
 
             let selected_style = Style::default().fg(Color::Yellow).modifier(Modifier::BOLD);
             let normal_style = Style::default().fg(Color::White);
-            let header = ["Header1", "Header2", "Header3"];
             let rows = table
                 .items
                 .iter()
