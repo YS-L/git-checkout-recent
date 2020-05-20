@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 git2 = { version="0.13.5" }
+tui = "0.9.4"
+termion = "1.5"
