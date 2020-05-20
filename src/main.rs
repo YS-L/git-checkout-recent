@@ -17,34 +17,14 @@ use tui::{
 
 pub struct StatefulTable<'a> {
     state: TableState,
-    items: Vec<Vec<&'a str>>,
+    items: &'a Vec<Vec<&'a str>>,
 }
 
 impl<'a> StatefulTable<'a> {
-    fn new() -> StatefulTable<'a> {
+    fn new(data: &'a Vec<Vec<&'a str>>) -> StatefulTable<'a> {
         StatefulTable {
             state: TableState::default(),
-            items: vec![
-                vec!["Row11", "Row12", "Row13"],
-                vec!["Row21", "Row22", "Row23"],
-                vec!["Row31", "Row32", "Row33"],
-                vec!["Row41", "Row42", "Row43"],
-                vec!["Row51", "Row52", "Row53"],
-                vec!["Row61", "Row62", "Row63"],
-                vec!["Row71", "Row72", "Row73"],
-                vec!["Row81", "Row82", "Row83"],
-                vec!["Row91", "Row92", "Row93"],
-                vec!["Row101", "Row102", "Row103"],
-                vec!["Row111", "Row112", "Row113"],
-                vec!["Row121", "Row122", "Row123"],
-                vec!["Row131", "Row132", "Row133"],
-                vec!["Row141", "Row142", "Row143"],
-                vec!["Row151", "Row152", "Row153"],
-                vec!["Row161", "Row162", "Row163"],
-                vec!["Row171", "Row172", "Row173"],
-                vec!["Row181", "Row182", "Row183"],
-                vec!["Row191", "Row192", "Row193"],
-            ],
+            items: data,
         }
     }
     pub fn next(&mut self) {
@@ -87,6 +67,19 @@ impl fmt::Display for BranchRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Branch({}, {}, {})", self.name, self.commit_sha, self.summary)
     }
+}
+
+fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> Vec<Vec<&str>>{
+    let mut data = vec![];
+    for r in records {
+        let row = vec![
+            r.name.as_str(),
+            r.commit_sha.as_str(),
+            r.summary.as_str(),
+        ];
+        data.push(row);
+    }
+    return data;
 }
 
 fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
@@ -158,7 +151,7 @@ fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
     records
 }
 
-fn render_branch_selection() -> Result<(), Box<dyn Error>> {
+fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<(), Box<dyn Error>> {
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -169,7 +162,8 @@ fn render_branch_selection() -> Result<(), Box<dyn Error>> {
 
     let events = Events::new();
 
-    let mut table = StatefulTable::new();
+    let table_data = get_table_data_from_branch_records(&records);
+    let mut table = StatefulTable::new(&table_data);
 
     // Input
     loop {
@@ -228,9 +222,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     records.sort_by(|a, b| b.time_seconds.cmp(&a.time_seconds));
 
-    for rec in records {
+    for rec in &records {
         println!("{}", rec);
     };
 
-    render_branch_selection()
+    render_branch_selection(&records)
 }
