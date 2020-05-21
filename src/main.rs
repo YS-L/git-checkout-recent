@@ -1,4 +1,3 @@
-use git2;
 use git2::Repository;
 use git2::BranchType;
 use git2::Branch;
@@ -18,11 +17,11 @@ use tui::{
 
 pub struct StatefulTable<'a> {
     state: TableState,
-    items: &'a Vec<Vec<&'a str>>,
+    items: &'a [Vec<&'a str>],
 }
 
 impl<'a> StatefulTable<'a> {
-    fn new(data: &'a Vec<Vec<&'a str>>) -> StatefulTable<'a> {
+    fn new(data: &'a [Vec<&'a str>]) -> StatefulTable<'a> {
         StatefulTable {
             state: TableState::default(),
             items: data,
@@ -71,7 +70,7 @@ impl fmt::Display for BranchRecord {
     }
 }
 
-fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> (Vec<Vec<&str>>, Vec<&str>) {
+fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<&str>>, Vec<&str>) {
     let mut data = vec![];
     let header = vec!["Name", "Last Commit", "Summary"];
     for r in records {
@@ -82,7 +81,7 @@ fn get_table_data_from_branch_records(records: &Vec<BranchRecord>) -> (Vec<Vec<&
         ];
         data.push(row);
     }
-    return (data, header);
+    (data, header)
 }
 
 fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
@@ -124,14 +123,14 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
     if is_valid {
         let record = BranchRecord {
             name: branch_name,
-            commit_sha: commit_sha,
-            time_seconds: time_seconds,
-            summary: summary,
-            ref_name: ref_name,
+            commit_sha,
+            time_seconds,
+            summary,
+            ref_name,
         };
-        return Some(record);
+        Some(record)
     } else {
-        return None;
+        None
     }
 
 }
@@ -157,7 +156,7 @@ fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
     records
 }
 
-fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<Option<&BranchRecord>, Box<dyn Error>> {
+fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRecord>, Box<dyn Error>> {
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -221,9 +220,9 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<Option<&Branch
     }
 
     match selected {
-        Some(row) => return Ok(Some(records.get(row).unwrap())),
-        _ => return Ok(None),
-    };
+        Some(row) => Ok(Some(records.get(row).unwrap())),
+        _ => Ok(None),
+    }
 }
 
 fn checkout_branch(repo: &Repository, record: &BranchRecord) -> Result<(), git2::Error> {
@@ -249,7 +248,7 @@ fn main() {
     };
 
     match render_branch_selection(&records) {
-        Ok(res) => match(res) {
+        Ok(res) => match res {
             Some(branch_record) => {
                 println!("Checking out local branch: {}", branch_record.name);
                 if let Err(e) = checkout_branch(&repo, &branch_record) {
