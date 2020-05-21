@@ -255,6 +255,7 @@ fn main() {
                 if let Err(e) = checkout_branch(&repo, &branch_record) {
                     println!("Failed to checkout branch: {}", e);
                 };
+                println!("Done");
             },
             _ => println!("Nothing to do"),
         },
