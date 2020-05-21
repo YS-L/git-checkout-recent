@@ -1,3 +1,4 @@
+use git2;
 use git2::Repository;
 use git2::BranchType;
 use git2::Branch;
@@ -61,6 +62,7 @@ struct BranchRecord {
     commit_sha: String,
     time_seconds: i64,
     summary: String,
+    ref_name: String,
 }
 
 impl fmt::Display for BranchRecord {
@@ -103,6 +105,8 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
     };
 
     let reference = branch.get();
+    let ref_name = reference.name()?.to_string();
+
     match reference.peel_to_commit() {
         Ok(commit) => {
             commit_sha = commit.id().to_string();
@@ -123,6 +127,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
             commit_sha: commit_sha,
             time_seconds: time_seconds,
             summary: summary,
+            ref_name: ref_name,
         };
         return Some(record);
     } else {
@@ -167,6 +172,7 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<Option<&Branch
     let mut table = StatefulTable::new(&table_data);
 
     let mut selected = None;
+    table.next();
 
     // Input
     loop {
@@ -220,6 +226,13 @@ fn render_branch_selection(records: &Vec<BranchRecord>) -> Result<Option<&Branch
     };
 }
 
+fn checkout_branch(repo: &Repository, record: &BranchRecord) -> Result<(), git2::Error> {
+    let treeish = repo.revparse_single(record.commit_sha.as_str())?;
+    repo.checkout_tree(&treeish, None)?;
+    repo.set_head(record.ref_name.as_str())?;
+    Ok(())
+}
+
 fn main() {
 
     let repo = match Repository::open("/home/liauys/Code/test-repo") {
@@ -237,8 +250,13 @@ fn main() {
 
     match render_branch_selection(&records) {
         Ok(res) => match(res) {
-            Some(branch_record) => println!("Selected branch: {}", branch_record.name),
-            _ => println!("Selected nothing"),
+            Some(branch_record) => {
+                println!("Checking out local branch: {}", branch_record.name);
+                if let Err(e) = checkout_branch(&repo, &branch_record) {
+                    println!("Failed to checkout branch: {}", e);
+                };
+            },
+            _ => println!("Nothing to do"),
         },
         Err(e) => println!("error rendering branch selection: {}", e),
     };
