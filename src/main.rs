@@ -31,13 +31,18 @@ impl<'a> StatefulTable<'a> {
             items: data,
         }
     }
+
+    pub fn init(&mut self) {
+        self.state.select(Some(0));
+    }
+
     pub fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
+                if i + 3 >= self.items.len() {
+                    i
                 } else {
-                    i + 1
+                    i + 3
                 }
             }
             None => 0,
@@ -48,10 +53,10 @@ impl<'a> StatefulTable<'a> {
     pub fn previous(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
+                if i < 3 {
+                    i
                 } else {
-                    i - 1
+                    i - 3
                 }
             }
             None => 0,
@@ -95,14 +100,16 @@ impl fmt::Display for BranchRecord {
 
 fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<String>>, Vec<String>) {
     let mut data = vec![];
-    let header = vec![String::from("Name"), String::from("Last Commit"), String::from("Summary")];
+    let header = vec![String::from("Name"), String::from("Last Commit")];
     for r in records {
         let commit_info = format!(
             "{} ({}) {}", &r.commit_sha[..8], r.pretty_format_date(), r.author_name
         );
-        let row = vec![
-            r.name.clone(), commit_info.clone(), r.summary.clone()
-        ];
+        let row = vec![r.name.clone(), commit_info.clone()];
+        data.push(row);
+        let row = vec![String::from(""), r.summary.clone()];
+        data.push(row);
+        let row = vec![String::from(""), String::from("")];
         data.push(row);
     }
     (data, header)
@@ -201,7 +208,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
     let mut table = StatefulTable::new(&table_data);
 
     let mut selected = None;
-    table.next();
+    table.init();
 
     // Input
     loop {
@@ -223,8 +230,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
                 .highlight_symbol(">> ")
                 .widths(&[
                     Constraint::Percentage(20),
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(30),
+                    Constraint::Percentage(80),
                 ]);
             f.render_stateful_widget(t, rects[0], &mut table.state);
         })?;
