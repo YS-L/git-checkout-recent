@@ -5,6 +5,10 @@ use std::fmt;
 
 mod util;
 use crate::util::event::{Event, Events};
+use chrono::NaiveDateTime;
+use chrono::offset::FixedOffset;
+use chrono::offset::TimeZone;
+use chrono_humanize::HumanTime;
 use std::{error::Error, io};
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
@@ -60,13 +64,31 @@ struct BranchRecord {
     name: String,
     commit_sha: String,
     time_seconds: i64,
+    offset_minutes: i32,
     summary: String,
     ref_name: String,
 }
 
+impl BranchRecord {
+    fn pretty_format_date(&self) -> String {
+        let naive_dt = NaiveDateTime::from_timestamp(self.time_seconds, 0);
+        let offset = FixedOffset::east(self.offset_minutes * 60);
+        let dt = offset.from_utc_datetime(&naive_dt);
+        let humanized_dt = HumanTime::from(dt);
+        humanized_dt.to_string()
+    }
+}
+
 impl fmt::Display for BranchRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Branch({}, {}, {})", self.name, self.commit_sha, self.summary)
+        write!(
+            f,
+            "Branch({}, {}, {}, {})",
+            self.name,
+            self.commit_sha,
+            self.summary,
+            self.pretty_format_date(),
+        )
     }
 }
 
@@ -91,6 +113,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
     let mut branch_name = String::from("unknown");
     let mut commit_sha = String::from("unknown");
     let mut time_seconds = 0;
+    let mut offset_minutes = 0;
     let mut summary = String::from("unknown");
 
     match branch.name() {
@@ -110,6 +133,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
         Ok(commit) => {
             commit_sha = commit.id().to_string();
             time_seconds = commit.time().seconds();
+            offset_minutes = commit.time().offset_minutes();
             if let Some(s) = commit.summary() {
                 summary = s.to_string();
             }
@@ -125,6 +149,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
             name: branch_name,
             commit_sha,
             time_seconds,
+            offset_minutes,
             summary,
             ref_name,
         };
@@ -236,7 +261,7 @@ fn main() {
 
     let repo = match Repository::open("/home/liauys/Code/test-repo") {
         Ok(repo) => repo,
-        Err(e) => panic!("failed to init: {}", e),
+        Err(e) => panic!("failed to open repo: {}", e),
     };
 
     let mut records = extract_local_branches(&repo);
