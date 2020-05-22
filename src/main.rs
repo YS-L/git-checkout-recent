@@ -21,11 +21,11 @@ use tui::{
 
 pub struct StatefulTable<'a> {
     state: TableState,
-    items: &'a [Vec<&'a str>],
+    items: &'a [Vec<String>],
 }
 
 impl<'a> StatefulTable<'a> {
-    fn new(data: &'a [Vec<&'a str>]) -> StatefulTable<'a> {
+    fn new(data: &'a [Vec<String>]) -> StatefulTable<'a> {
         StatefulTable {
             state: TableState::default(),
             items: data,
@@ -92,14 +92,15 @@ impl fmt::Display for BranchRecord {
     }
 }
 
-fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<&str>>, Vec<&str>) {
+fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<String>>, Vec<String>) {
     let mut data = vec![];
-    let header = vec!["Name", "Last Commit", "Summary"];
+    let header = vec![String::from("Name"), String::from("Last Commit"), String::from("Summary")];
     for r in records {
+        let commit_info = format!("{} \n\r({})", &r.commit_sha[..8], r.pretty_format_date());
         let row = vec![
-            r.name.as_str(),
-            r.commit_sha.as_str(),
-            r.summary.as_str(),
+            r.name.clone(),
+            commit_info.clone(),
+            r.summary.clone(),
         ];
         data.push(row);
     }
