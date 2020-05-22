@@ -67,6 +67,7 @@ struct BranchRecord {
     offset_minutes: i32,
     summary: String,
     ref_name: String,
+    author_name: String,
 }
 
 impl BranchRecord {
@@ -96,11 +97,11 @@ fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<Stri
     let mut data = vec![];
     let header = vec![String::from("Name"), String::from("Last Commit"), String::from("Summary")];
     for r in records {
-        let commit_info = format!("{} \n\r({})", &r.commit_sha[..8], r.pretty_format_date());
+        let commit_info = format!(
+            "{} ({}) {}", &r.commit_sha[..8], r.pretty_format_date(), r.author_name
+        );
         let row = vec![
-            r.name.clone(),
-            commit_info.clone(),
-            r.summary.clone(),
+            r.name.clone(), commit_info.clone(), r.summary.clone()
         ];
         data.push(row);
     }
@@ -116,6 +117,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
     let mut time_seconds = 0;
     let mut offset_minutes = 0;
     let mut summary = String::from("unknown");
+    let mut author_name = String::from("unknown");
 
     match branch.name() {
         Ok(name) => if let Some(name) = name {
@@ -138,6 +140,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
             if let Some(s) = commit.summary() {
                 summary = s.to_string();
             }
+            author_name = commit.author().name()?.to_string();
         },
         Err(e) => {
             println!("error getting commit: {}", e);
@@ -153,6 +156,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
             offset_minutes,
             summary,
             ref_name,
+            author_name,
         };
         Some(record)
     } else {
@@ -218,9 +222,9 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
                 .highlight_style(selected_style)
                 .highlight_symbol(">> ")
                 .widths(&[
-                    Constraint::Length(30),
-                    Constraint::Length(50),
+                    Constraint::Percentage(20),
                     Constraint::Percentage(50),
+                    Constraint::Percentage(30),
                 ]);
             f.render_stateful_widget(t, rects[0], &mut table.state);
         })?;
