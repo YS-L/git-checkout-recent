@@ -10,6 +10,7 @@ use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
 use chrono_humanize::HumanTime;
 use std::{error::Error, io};
+use std::env::current_dir;
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::TermionBackend,
@@ -270,7 +271,9 @@ fn checkout_branch(repo: &Repository, record: &BranchRecord) -> Result<(), git2:
 
 fn main() {
 
-    let repo = match Repository::open("/home/liauys/Code/test-repo") {
+    let repo_dir = current_dir().expect("failed to get repo directory");
+
+    let repo = match Repository::open(repo_dir) {
         Ok(repo) => repo,
         Err(e) => panic!("failed to open repo: {}", e),
     };
