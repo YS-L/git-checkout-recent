@@ -256,7 +256,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
     }
 
     match selected {
-        Some(row) => Ok(Some(records.get(row).unwrap())),
+        Some(row) => Ok(Some(records.get(row / 3).unwrap())),
         _ => Ok(None),
     }
 }
@@ -287,10 +287,10 @@ fn main() {
         Ok(res) => match res {
             Some(branch_record) => {
                 println!("Checking out local branch: {}", branch_record.name);
-                if let Err(e) = checkout_branch(&repo, &branch_record) {
-                    println!("Failed to checkout branch: {}", e);
+                match checkout_branch(&repo, &branch_record) {
+                    Ok(()) => println!("Done"),
+                    Err(e) => println!("Failed to checkout branch: {}", e),
                 };
-                println!("Done");
             },
             _ => println!("Nothing to do"),
         },
