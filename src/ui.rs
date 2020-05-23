@@ -15,17 +15,17 @@ pub struct BranchTable<'a> {
     state: TableState,
     items: Vec<Vec<String>>,
     header: Vec<String>,
-    records: &'a Vec<BranchRecord>,
+    records: &'a [BranchRecord],
 }
 
 impl<'a> BranchTable<'a> {
-    pub fn new(records: &'a Vec<BranchRecord>) -> BranchTable<'a> {
+    pub fn new(records: &'a [BranchRecord]) -> BranchTable<'a> {
         let (data, header) = get_table_data_from_branch_records(&records);
         BranchTable {
             state: TableState::default(),
             items: data,
-            header: header,
-            records: records,
+            header,
+            records,
         }
     }
 

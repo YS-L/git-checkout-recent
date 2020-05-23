@@ -6,15 +6,8 @@ use git2::Repository;
 use git2::RepositoryState;
 use std::env::current_dir;
 
-use git::{BranchRecord, extract_local_branches};
+use git::{extract_local_branches, checkout_branch};
 use ui::{BranchTable, render_branch_selection};
-
-fn checkout_branch(repo: &Repository, record: &BranchRecord) -> Result<(), git2::Error> {
-    let treeish = repo.revparse_single(record.commit_sha.as_str())?;
-    repo.checkout_tree(&treeish, None)?;
-    repo.set_head(record.ref_name.as_str())?;
-    Ok(())
-}
 
 fn main() {
 
@@ -33,10 +26,6 @@ fn main() {
     let mut records = extract_local_branches(&repo);
 
     records.sort_by(|a, b| b.time_seconds.cmp(&a.time_seconds));
-
-    for rec in &records {
-        println!("{}", rec);
-    };
 
     let mut branch_table = BranchTable::new(&records);
 

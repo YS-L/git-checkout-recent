@@ -142,3 +142,10 @@ pub fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
 
     records
 }
+
+pub fn checkout_branch(repo: &Repository, record: &BranchRecord) -> Result<(), git2::Error> {
+    let treeish = repo.revparse_single(record.commit_sha.as_str())?;
+    repo.checkout_tree(&treeish, None)?;
+    repo.set_head(record.ref_name.as_str())?;
+    Ok(())
+}
