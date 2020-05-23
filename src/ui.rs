@@ -134,7 +134,7 @@ pub fn render_branch_selection<'a>(
                 )
                 .highlight_style(selected_style)
                 .highlight_symbol(">> ")
-                .widths(&[Constraint::Percentage(20), Constraint::Percentage(80)]);
+                .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)]);
             f.render_stateful_widget(t, rects[0], &mut table.state);
         })?;
 
