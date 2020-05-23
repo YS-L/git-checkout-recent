@@ -12,3 +12,7 @@ tui = "0.9.4"
 termion = "1.5"
 chrono = "0.4"
 chrono-humanize = "0.0.11"
+
+[[bin]]
+name = "git-recent"
+path = "src/main.rs"
