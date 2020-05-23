@@ -1,6 +1,7 @@
 use git2::Repository;
 use git2::BranchType;
 use git2::Branch;
+use git2::RepositoryState;
 use std::fmt;
 
 mod util;
@@ -205,6 +206,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
 
     let events = Events::new();
 
+    // TODO: probably belong within StatefulTable
     let (table_data, header) = get_table_data_from_branch_records(&records);
     let mut table = StatefulTable::new(&table_data);
 
@@ -257,6 +259,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
     }
 
     match selected {
+        // TODO: row / 3 should be refactored out of here
         Some(row) => Ok(Some(records.get(row / 3).unwrap())),
         _ => Ok(None),
     }
@@ -286,14 +289,23 @@ fn main() {
         println!("{}", rec);
     };
 
+    if repo.state() != RepositoryState::Clean {
+        println!("Repository is not in a clean state (in the middle of a merge?), aborting");
+        return
+    };
+
     match render_branch_selection(&records) {
         Ok(res) => match res {
             Some(branch_record) => {
                 println!("Checking out local branch: {}", branch_record.name);
                 match checkout_branch(&repo, &branch_record) {
                     Ok(()) => println!("Done"),
-                    Err(e) => println!("Failed to checkout branch: {}", e),
+                    Err(e) => {
+                        println!("Failed to checkout branch: {}", e);
+                        println!("Please commit your changes or stash them before you switch branches.");
+                    },
                 };
+
             },
             _ => println!("Nothing to do"),
         },
