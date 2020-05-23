@@ -140,13 +140,14 @@ pub fn render_branch_selection<'a>(
 
         if let Event::Input(key) = events.next()? {
             match key {
-                Key::Char('q') => {
+                Key::Char('q') | Key::Char('Q') | Key::Esc => {
                     table.deselect();
+                    break;
                 }
-                Key::Down => {
+                Key::Down | Key::Char('j') => {
                     table.next();
                 }
-                Key::Up => {
+                Key::Up | Key::Char('k') => {
                     table.previous();
                 }
                 Key::Char('\n') => {
