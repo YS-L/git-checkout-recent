@@ -75,6 +75,7 @@ struct BranchRecord {
     summary: String,
     ref_name: String,
     author_name: String,
+    is_current_branch: bool,
 }
 
 impl BranchRecord {
@@ -104,10 +105,14 @@ fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<Stri
     let mut data = vec![];
     let header = vec![String::from("Name"), String::from("Last Commit")];
     for r in records {
+        let mut name = r.name.clone();
+        if r.is_current_branch {
+            name = String::from("* ") + &name;
+        }
         let commit_info = format!(
             "{} ({}) {}", &r.commit_sha[..8], r.pretty_format_date(), r.author_name
         );
-        let row = vec![r.name.clone(), commit_info.clone()];
+        let row = vec![name, commit_info.clone()];
         data.push(row);
         let row = vec![String::from(""), r.summary.clone()];
         data.push(row);
@@ -117,7 +122,7 @@ fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<Stri
     (data, header)
 }
 
-fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
+fn parse_local_branch(branch: &Branch, head_branch_refname: &Option<String>) -> Option<BranchRecord> {
 
     let mut is_valid = true;
 
@@ -127,6 +132,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
     let mut offset_minutes = 0;
     let mut summary = String::from("unknown");
     let mut author_name = String::from("unknown");
+    let mut is_current_branch = false;
 
     match branch.name() {
         Ok(name) => if let Some(name) = name {
@@ -139,7 +145,11 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
     };
 
     let reference = branch.get();
+
     let ref_name = reference.name()?.to_string();
+    if let Some(current) = head_branch_refname {
+        is_current_branch = ref_name == *current;
+    }
 
     match reference.peel_to_commit() {
         Ok(commit) => {
@@ -166,6 +176,7 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
             summary,
             ref_name,
             author_name,
+            is_current_branch,
         };
         Some(record)
     } else {
@@ -174,15 +185,31 @@ fn parse_local_branch(branch: &Branch) -> Option<BranchRecord> {
 
 }
 
+fn get_current_branch_refname(repo: &Repository) -> Option<String> {
+    if let Ok(is_detached) = repo.head_detached() {
+        if is_detached {
+            return None
+        }
+    };
+    if let Ok(head) = repo.head() {
+        if let Some(name) = head.name() {
+            return Some(name.to_string())
+        }
+    };
+    None
+}
+
 fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
 
     let mut records: Vec<BranchRecord> = Vec::new();
+
+    let current_branch_refname = get_current_branch_refname(repo);
 
     match repo.branches(Some(BranchType::Local)) {
         Ok(branches) => for branch in branches {
             match branch {
                 Ok((branch, _)) => {
-                    if let Some(record) = parse_local_branch(&branch) {
+                    if let Some(record) = parse_local_branch(&branch, &current_branch_refname) {
                         records.push(record)
                     }
                 }
@@ -297,6 +324,12 @@ fn main() {
     match render_branch_selection(&records) {
         Ok(res) => match res {
             Some(branch_record) => {
+
+                if branch_record.is_current_branch {
+                    println!("Already at branch: {}, nothing to do", branch_record.name);
+                    return
+                }
+
                 println!("Checking out local branch: {}", branch_record.name);
                 match checkout_branch(&repo, &branch_record) {
                     Ok(()) => println!("Done"),
