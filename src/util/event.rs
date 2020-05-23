@@ -68,7 +68,7 @@ impl Events {
         let tick_handle = {
             thread::spawn(move || loop {
                 if let Err(e) = tx.send(Event::Tick) {
-                    println!("error sending tick: {}", e);
+                    //println!("error sending tick: {}", e);
                 };
                 thread::sleep(config.tick_rate);
             })

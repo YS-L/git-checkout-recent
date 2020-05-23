@@ -13,18 +13,15 @@ fn handle_selected_branch(repo: &Repository, branch_record: &Option<&BranchRecor
     match branch_record {
         Some(branch_record) => {
             if branch_record.is_current_branch {
-                println!("Already at branch: {}, nothing to do", branch_record.name);
+                println!("Already on '{}'", branch_record.name);
                 return;
             }
 
-            println!("Checking out local branch: {}", branch_record.name);
-            match checkout_branch(&repo, &branch_record) {
-                Ok(()) => println!("Done"),
-                Err(e) => {
-                    println!("Failed to checkout branch: {}", e);
-                    println!("Please commit your changes or stash them before you switch branches.");
-                }
+            if let Err(e) = checkout_branch(&repo, &branch_record) {
+                println!("Failed to checkout branch: {}", e);
+                println!("Please commit your changes or stash them before you switch branches.");
             };
+            println!("Switched to branch '{}'", branch_record.name);
         }
         _ => println!("Nothing to do"),
     }
