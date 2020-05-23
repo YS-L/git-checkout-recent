@@ -21,16 +21,55 @@ use tui::{
     Terminal,
 };
 
-pub struct StatefulTable<'a> {
-    state: TableState,
-    items: &'a [Vec<String>],
+pub struct BranchRecord {
+    name: String,
+    commit_sha: String,
+    time_seconds: i64,
+    offset_minutes: i32,
+    summary: String,
+    ref_name: String,
+    author_name: String,
+    is_current_branch: bool,
 }
 
-impl<'a> StatefulTable<'a> {
-    fn new(data: &'a [Vec<String>]) -> StatefulTable<'a> {
-        StatefulTable {
+impl BranchRecord {
+    fn pretty_format_date(&self) -> String {
+        let naive_dt = NaiveDateTime::from_timestamp(self.time_seconds, 0);
+        let offset = FixedOffset::east(self.offset_minutes * 60);
+        let dt = offset.from_utc_datetime(&naive_dt);
+        let humanized_dt = HumanTime::from(dt);
+        humanized_dt.to_string()
+    }
+}
+
+impl fmt::Display for BranchRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Branch({}, {}, {}, {})",
+            self.name,
+            self.commit_sha,
+            self.summary,
+            self.pretty_format_date(),
+        )
+    }
+}
+
+pub struct BranchTable<'a> {
+    state: TableState,
+    items: Vec<Vec<String>>,
+    header: Vec<String>,
+    records: &'a Vec<BranchRecord>,
+}
+
+impl<'a> BranchTable<'a> {
+    fn new(records: &'a Vec<BranchRecord>) -> BranchTable<'a> {
+        let (data, header) = get_table_data_from_branch_records(&records);
+        BranchTable {
             state: TableState::default(),
             items: data,
+            header: header,
+            records: records,
         }
     }
 
@@ -65,39 +104,16 @@ impl<'a> StatefulTable<'a> {
         };
         self.state.select(Some(i));
     }
-}
 
-struct BranchRecord {
-    name: String,
-    commit_sha: String,
-    time_seconds: i64,
-    offset_minutes: i32,
-    summary: String,
-    ref_name: String,
-    author_name: String,
-    is_current_branch: bool,
-}
-
-impl BranchRecord {
-    fn pretty_format_date(&self) -> String {
-        let naive_dt = NaiveDateTime::from_timestamp(self.time_seconds, 0);
-        let offset = FixedOffset::east(self.offset_minutes * 60);
-        let dt = offset.from_utc_datetime(&naive_dt);
-        let humanized_dt = HumanTime::from(dt);
-        humanized_dt.to_string()
+    pub fn deselect(&mut self) {
+        self.state.select(None);
     }
-}
 
-impl fmt::Display for BranchRecord {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Branch({}, {}, {}, {})",
-            self.name,
-            self.commit_sha,
-            self.summary,
-            self.pretty_format_date(),
-        )
+    pub fn selected_record(&mut self) -> Option<&BranchRecord> {
+        match self.state.selected() {
+            Some(row) => self.records.get(row / 3),
+            _ => None,
+        }
     }
 }
 
@@ -148,7 +164,7 @@ fn parse_local_branch(branch: &Branch, head_branch_refname: &Option<String>) -> 
 
     let ref_name = reference.name()?.to_string();
     if let Some(current) = head_branch_refname {
-        is_current_branch = ref_name == *current;
+        is_current_branch = ref_name == current.as_str();
     }
 
     match reference.peel_to_commit() {
@@ -222,7 +238,7 @@ fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
     records
 }
 
-fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRecord>, Box<dyn Error>> {
+fn render_branch_selection<'a>(table: &'a mut BranchTable) -> Result<Option<&'a BranchRecord>, Box<dyn Error>> {
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -233,11 +249,6 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
 
     let events = Events::new();
 
-    // TODO: probably belong within StatefulTable
-    let (table_data, header) = get_table_data_from_branch_records(&records);
-    let mut table = StatefulTable::new(&table_data);
-
-    let mut selected = None;
     table.init();
 
     // Input
@@ -254,7 +265,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
                 .items
                 .iter()
                 .map(|i| Row::StyledData(i.iter(), normal_style));
-            let t = Table::new(header.iter(), rows)
+            let t = Table::new(table.header.iter(), rows)
                 .block(Block::default().borders(Borders::ALL).title("Recent branches"))
                 .highlight_style(selected_style)
                 .highlight_symbol(">> ")
@@ -268,7 +279,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
         if let Event::Input(key) = events.next()? {
             match key {
                 Key::Char('q') => {
-                    break;
+                    table.deselect();
                 }
                 Key::Down => {
                     table.next();
@@ -277,7 +288,6 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
                     table.previous();
                 }
                 Key::Char('\n') => {
-                    selected = table.state.selected();
                     break;
                 }
                 _ => {}
@@ -285,11 +295,7 @@ fn render_branch_selection(records: &[BranchRecord]) -> Result<Option<&BranchRec
         };
     }
 
-    match selected {
-        // TODO: row / 3 should be refactored out of here
-        Some(row) => Ok(Some(records.get(row / 3).unwrap())),
-        _ => Ok(None),
-    }
+    Ok(table.selected_record())
 }
 
 fn checkout_branch(repo: &Repository, record: &BranchRecord) -> Result<(), git2::Error> {
@@ -308,6 +314,11 @@ fn main() {
         Err(e) => panic!("failed to open repo: {}", e),
     };
 
+    if repo.state() != RepositoryState::Clean {
+        println!("Repository is not in a clean state (in the middle of a merge?), aborting");
+        return
+    };
+
     let mut records = extract_local_branches(&repo);
 
     records.sort_by(|a, b| b.time_seconds.cmp(&a.time_seconds));
@@ -316,12 +327,9 @@ fn main() {
         println!("{}", rec);
     };
 
-    if repo.state() != RepositoryState::Clean {
-        println!("Repository is not in a clean state (in the middle of a merge?), aborting");
-        return
-    };
+    let mut branch_table = BranchTable::new(&records);
 
-    match render_branch_selection(&records) {
+    match render_branch_selection(&mut branch_table) {
         Ok(res) => match res {
             Some(branch_record) => {
 
