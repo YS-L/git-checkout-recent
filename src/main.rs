@@ -1,16 +1,15 @@
 mod git;
-mod util;
 mod ui;
+mod util;
 
 use git2::Repository;
 use git2::RepositoryState;
 use std::env::current_dir;
 
-use git::{extract_local_branches, checkout_branch};
-use ui::{BranchTable, render_branch_selection};
+use git::{checkout_branch, extract_local_branches};
+use ui::{render_branch_selection, BranchTable};
 
 fn main() {
-
     let repo_dir = current_dir().expect("failed to get repo directory");
 
     let repo = match Repository::open(repo_dir) {
@@ -20,7 +19,7 @@ fn main() {
 
     if repo.state() != RepositoryState::Clean {
         println!("Repository is not in a clean state (in the middle of a merge?), aborting");
-        return
+        return;
     };
 
     let mut records = extract_local_branches(&repo);
@@ -30,26 +29,26 @@ fn main() {
     let mut branch_table = BranchTable::new(&records);
 
     match render_branch_selection(&mut branch_table) {
-        Ok(res) => match res {
-            Some(branch_record) => {
+        Ok(res) => {
+            match res {
+                Some(branch_record) => {
+                    if branch_record.is_current_branch {
+                        println!("Already at branch: {}, nothing to do", branch_record.name);
+                        return;
+                    }
 
-                if branch_record.is_current_branch {
-                    println!("Already at branch: {}, nothing to do", branch_record.name);
-                    return
+                    println!("Checking out local branch: {}", branch_record.name);
+                    match checkout_branch(&repo, &branch_record) {
+                        Ok(()) => println!("Done"),
+                        Err(e) => {
+                            println!("Failed to checkout branch: {}", e);
+                            println!("Please commit your changes or stash them before you switch branches.");
+                        }
+                    };
                 }
-
-                println!("Checking out local branch: {}", branch_record.name);
-                match checkout_branch(&repo, &branch_record) {
-                    Ok(()) => println!("Done"),
-                    Err(e) => {
-                        println!("Failed to checkout branch: {}", e);
-                        println!("Please commit your changes or stash them before you switch branches.");
-                    },
-                };
-
-            },
-            _ => println!("Nothing to do"),
-        },
+                _ => println!("Nothing to do"),
+            }
+        }
         Err(e) => println!("error rendering branch selection: {}", e),
     };
 }

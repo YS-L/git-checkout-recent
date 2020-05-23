@@ -1,3 +1,5 @@
+use std::{error::Error, io};
+use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::TermionBackend,
     layout::{Constraint, Layout},
@@ -5,8 +7,6 @@ use tui::{
     widgets::{Block, Borders, Row, Table, TableState},
     Terminal,
 };
-use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
-use std::{error::Error, io};
 
 use super::git::BranchRecord;
 use super::util::event::{Event, Events};
@@ -82,7 +82,10 @@ fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<Stri
             name = String::from("* ") + &name;
         }
         let commit_info = format!(
-            "{} ({}) {}", &r.commit_sha[..8], r.pretty_format_date(), r.author_name
+            "{} ({}) {}",
+            &r.commit_sha[..8],
+            r.pretty_format_date(),
+            r.author_name
         );
         let row = vec![name, commit_info.clone()];
         data.push(row);
@@ -94,7 +97,9 @@ fn get_table_data_from_branch_records(records: &[BranchRecord]) -> (Vec<Vec<Stri
     (data, header)
 }
 
-pub fn render_branch_selection<'a>(table: &'a mut BranchTable) -> Result<Option<&'a BranchRecord>, Box<dyn Error>> {
+pub fn render_branch_selection<'a>(
+    table: &'a mut BranchTable,
+) -> Result<Option<&'a BranchRecord>, Box<dyn Error>> {
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -122,13 +127,14 @@ pub fn render_branch_selection<'a>(table: &'a mut BranchTable) -> Result<Option<
                 .iter()
                 .map(|i| Row::StyledData(i.iter(), normal_style));
             let t = Table::new(table.header.iter(), rows)
-                .block(Block::default().borders(Borders::ALL).title("Recent branches"))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("Recent branches"),
+                )
                 .highlight_style(selected_style)
                 .highlight_symbol(">> ")
-                .widths(&[
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(80),
-                ]);
+                .widths(&[Constraint::Percentage(20), Constraint::Percentage(80)]);
             f.render_stateful_widget(t, rects[0], &mut table.state);
         })?;
 

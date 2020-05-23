@@ -1,12 +1,12 @@
 use std::fmt;
 
-use git2::Repository;
-use git2::BranchType;
 use git2::Branch;
+use git2::BranchType;
+use git2::Repository;
 
-use chrono::NaiveDateTime;
 use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
+use chrono::NaiveDateTime;
 use chrono_humanize::HumanTime;
 
 pub struct BranchRecord {
@@ -43,8 +43,10 @@ impl fmt::Display for BranchRecord {
     }
 }
 
-fn parse_local_branch(branch: &Branch, head_branch_refname: &Option<String>) -> Option<BranchRecord> {
-
+fn parse_local_branch(
+    branch: &Branch,
+    head_branch_refname: &Option<String>,
+) -> Option<BranchRecord> {
     let mut is_valid = true;
 
     let mut branch_name = String::from("unknown");
@@ -56,13 +58,15 @@ fn parse_local_branch(branch: &Branch, head_branch_refname: &Option<String>) -> 
     let mut is_current_branch = false;
 
     match branch.name() {
-        Ok(name) => if let Some(name) = name {
-            branch_name = name.to_string();
-        },
+        Ok(name) => {
+            if let Some(name) = name {
+                branch_name = name.to_string();
+            }
+        }
         Err(e) => {
             println!("branch name error: {}", e);
             is_valid = false;
-        },
+        }
     };
 
     let reference = branch.get();
@@ -81,11 +85,11 @@ fn parse_local_branch(branch: &Branch, head_branch_refname: &Option<String>) -> 
                 summary = s.to_string();
             }
             author_name = commit.author().name()?.to_string();
-        },
+        }
         Err(e) => {
             println!("error getting commit: {}", e);
             is_valid = false;
-        },
+        }
     }
 
     if is_valid {
@@ -103,38 +107,38 @@ fn parse_local_branch(branch: &Branch, head_branch_refname: &Option<String>) -> 
     } else {
         None
     }
-
 }
 
 fn get_current_branch_refname(repo: &Repository) -> Option<String> {
     if let Ok(is_detached) = repo.head_detached() {
         if is_detached {
-            return None
+            return None;
         }
     };
     if let Ok(head) = repo.head() {
         if let Some(name) = head.name() {
-            return Some(name.to_string())
+            return Some(name.to_string());
         }
     };
     None
 }
 
 pub fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
-
     let mut records: Vec<BranchRecord> = Vec::new();
 
     let current_branch_refname = get_current_branch_refname(repo);
 
     match repo.branches(Some(BranchType::Local)) {
-        Ok(branches) => for branch in branches {
-            match branch {
-                Ok((branch, _)) => {
-                    if let Some(record) = parse_local_branch(&branch, &current_branch_refname) {
-                        records.push(record)
+        Ok(branches) => {
+            for branch in branches {
+                match branch {
+                    Ok((branch, _)) => {
+                        if let Some(record) = parse_local_branch(&branch, &current_branch_refname) {
+                            records.push(record)
+                        }
                     }
+                    Err(e) => println!("error in branch: {}", e),
                 }
-                Err(e) => println!("error in branch: {}", e),
             }
         }
         Err(e) => panic!("failed to get branches: {}", e),
