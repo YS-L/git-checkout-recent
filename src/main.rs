@@ -6,8 +6,29 @@ use git2::Repository;
 use git2::RepositoryState;
 use std::env::current_dir;
 
-use git::{checkout_branch, extract_local_branches};
+use git::{BranchRecord, checkout_branch, extract_local_branches};
 use ui::{render_branch_selection, BranchTable};
+
+fn handle_selected_branch(repo: &Repository, branch_record: &Option<&BranchRecord>) {
+    match branch_record {
+        Some(branch_record) => {
+            if branch_record.is_current_branch {
+                println!("Already at branch: {}, nothing to do", branch_record.name);
+                return;
+            }
+
+            println!("Checking out local branch: {}", branch_record.name);
+            match checkout_branch(&repo, &branch_record) {
+                Ok(()) => println!("Done"),
+                Err(e) => {
+                    println!("Failed to checkout branch: {}", e);
+                    println!("Please commit your changes or stash them before you switch branches.");
+                }
+            };
+        }
+        _ => println!("Nothing to do"),
+    }
+}
 
 fn main() {
     let repo_dir = current_dir().expect("failed to get repo directory");
@@ -29,26 +50,7 @@ fn main() {
     let mut branch_table = BranchTable::new(&records);
 
     match render_branch_selection(&mut branch_table) {
-        Ok(res) => {
-            match res {
-                Some(branch_record) => {
-                    if branch_record.is_current_branch {
-                        println!("Already at branch: {}, nothing to do", branch_record.name);
-                        return;
-                    }
-
-                    println!("Checking out local branch: {}", branch_record.name);
-                    match checkout_branch(&repo, &branch_record) {
-                        Ok(()) => println!("Done"),
-                        Err(e) => {
-                            println!("Failed to checkout branch: {}", e);
-                            println!("Please commit your changes or stash them before you switch branches.");
-                        }
-                    };
-                }
-                _ => println!("Nothing to do"),
-            }
-        }
+        Ok(res) => handle_selected_branch(&repo, &res),
         Err(e) => println!("error rendering branch selection: {}", e),
     };
 }
