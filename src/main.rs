@@ -5,6 +5,7 @@ mod util;
 use git2::Repository;
 use git2::RepositoryState;
 use std::env::current_dir;
+use std::process::exit;
 
 use git::{BranchRecord, checkout_branch, extract_local_branches};
 use ui::{render_branch_selection, BranchTable};
@@ -20,6 +21,7 @@ fn handle_selected_branch(repo: &Repository, branch_record: &Option<&BranchRecor
             if let Err(e) = checkout_branch(&repo, &branch_record) {
                 println!("Failed to checkout branch: {}", e);
                 println!("Please commit your changes or stash them before you switch branches.");
+                exit(1);
             };
             println!("Switched to branch '{}'", branch_record.name);
         }
@@ -37,7 +39,7 @@ fn main() {
 
     if repo.state() != RepositoryState::Clean {
         println!("Repository is not in a clean state (in the middle of a merge?), aborting");
-        return;
+        exit(1);
     };
 
     let mut records = extract_local_branches(&repo);
@@ -48,6 +50,9 @@ fn main() {
 
     match render_branch_selection(&mut branch_table) {
         Ok(res) => handle_selected_branch(&repo, &res),
-        Err(e) => println!("error rendering branch selection: {}", e),
+        Err(e) => {
+            println!("error rendering branch selection: {}", e);
+            exit(1);
+        },
     };
 }
