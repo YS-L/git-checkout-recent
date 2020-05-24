@@ -4,7 +4,6 @@ mod util;
 
 use git2::Repository;
 use git2::RepositoryState;
-use std::env::current_dir;
 use std::process::exit;
 
 use git::{BranchRecord, checkout_branch, extract_local_branches};
@@ -30,9 +29,7 @@ fn handle_selected_branch(repo: &Repository, branch_record: &Option<&BranchRecor
 }
 
 fn main() {
-    let repo_dir = current_dir().expect("failed to get repo directory");
-
-    let repo = match Repository::open(repo_dir) {
+    let repo = match Repository::discover(".") {
         Ok(repo) => repo,
         Err(e) => panic!("failed to open repo: {}", e),
     };
