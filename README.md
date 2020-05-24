@@ -1,18 +1,23 @@
-# git-recent-rs
+# git-checkout-recent
 
-Switch between recent local branches easily.
+Switch between recent local git branches easily using `git checkout-recent`:
+
+![Demo](/images/demo.gif)
 
 ## Usage
 
+Command line:
 ```bash
-git recent
+git checkout-recent
 ```
 
-Navigate between branches: Up / Down
-Select: Enter
-Exit: ESC
+Controls:
+* Navigate between branches: Up / Down
+* Select branch: Enter
+* Exit: Esc
 
 ## Install
+Cargo is required. [Set it up](https://www.rust-lang.org/tools/install) and then run:
 ```bash
-cargo install git-recent
+cargo install git-checkout-recent
 ```

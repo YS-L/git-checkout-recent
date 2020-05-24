@@ -1,12 +1,13 @@
 [package]
-name = "git-recent"
+name = "git-checkout-recent"
 version = "0.1.0"
 authors = ["Yung Siang Liau <liauys@gmail.com>"]
 license = "MIT"
-description = "A tool to switch between recent local branches easily"
+description = "A tool to switch between recent local git branches easily"
 readme = "README.md"
-homepage = "https://github.com/YS-L/git-recent-rs"
-repository = "https://github.com/YS-L/git-recent-rs"
+homepage = "http://github.com/YS-L/git-checkout-recent"
+repository = "http://github.com/YS-L/git-checkout-recent"
+exclude = ["images/*"]
 keywords = ["cli", "git"]
 categories = ["command-line-utilities"]
 edition = "2018"
@@ -21,5 +22,5 @@ chrono = "0.4"
 chrono-humanize = "0.0.11"
 
 [[bin]]
-name = "git-recent"
+name = "git-checkout-recent"
 path = "src/main.rs"
