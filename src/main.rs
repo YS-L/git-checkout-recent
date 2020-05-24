@@ -41,8 +41,8 @@ fn main() {
     };
 
     let mut records = extract_local_branches(&repo);
-
     records.sort_by(|a, b| b.time_seconds.cmp(&a.time_seconds));
+    records.truncate(50);
 
     let mut branch_table = BranchTable::new(&records);
 
