@@ -1,7 +1,14 @@
 [package]
-name = "git-recent-rs"
+name = "git-recent"
 version = "0.1.0"
 authors = ["Yung Siang Liau <liauys@gmail.com>"]
+license = "MIT"
+description = "A tool to switch between recent local branches easily"
+readme = "README.md"
+homepage = "https://github.com/YS-L/git-recent-rs"
+repository = "https://github.com/YS-L/git-recent-rs"
+keywords = ["cli", "git"]
+categories = ["command-line-utilities"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
