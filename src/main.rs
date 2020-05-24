@@ -6,10 +6,10 @@ use git2::Repository;
 use git2::RepositoryState;
 use std::process::exit;
 
-use git::{BranchRecord, checkout_branch, extract_local_branches};
+use git::{checkout_branch, extract_local_branches, BranchRecord};
 use ui::{render_branch_selection, BranchTable};
 
-fn handle_selected_branch(repo: &Repository, branch_record: &Option<&BranchRecord>) {
+fn handle_selected_branch(repo: &Repository, branch_record: Option<&BranchRecord>) {
     match branch_record {
         Some(branch_record) => {
             if branch_record.is_current_branch {
@@ -46,10 +46,10 @@ fn main() {
     let mut branch_table = BranchTable::new(&records);
 
     match render_branch_selection(&mut branch_table) {
-        Ok(res) => handle_selected_branch(&repo, &res),
+        Ok(res) => handle_selected_branch(&repo, res),
         Err(e) => {
             println!("error rendering branch selection: {}", e);
             exit(1);
-        },
+        }
     };
 }
