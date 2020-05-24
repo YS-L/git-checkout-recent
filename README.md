@@ -18,6 +18,10 @@ Controls:
 
 ## Install
 Cargo is required. [Set it up](https://www.rust-lang.org/tools/install) and then run:
+
 ```bash
 cargo install git-checkout-recent
 ```
+
+This will install the `git-checkout-recent` binary to the `~/.cargo/bin/`
+directory by default.
