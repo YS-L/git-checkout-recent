@@ -17,12 +17,12 @@ fn handle_selected_branch(repo: &Repository, branch_record: Option<&BranchRecord
                 return;
             }
 
+            println!("Switching to branch '{}'", branch_record.name);
             if let Err(e) = checkout_branch(&repo, &branch_record) {
                 println!("Failed to checkout branch: {}", e);
                 println!("Please commit your changes or stash them before you switch branches.");
                 exit(1);
             };
-            println!("Switched to branch '{}'", branch_record.name);
         }
         _ => println!("Nothing to do"),
     }
