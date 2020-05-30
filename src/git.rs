@@ -47,66 +47,35 @@ fn parse_local_branch(
     branch: &Branch,
     head_branch_refname: &Option<String>,
 ) -> Option<BranchRecord> {
-    let mut is_valid = true;
 
-    let mut branch_name = String::from("unknown");
-    let mut commit_sha = String::from("unknown");
-    let mut time_seconds = 0;
-    let mut offset_minutes = 0;
-    let mut summary = String::from("unknown");
-    let mut author_name = String::from("unknown");
-    let mut is_current_branch = false;
-
-    match branch.name() {
-        Ok(name) => {
-            if let Some(name) = name {
-                branch_name = name.to_string();
-            }
-        }
-        Err(e) => {
-            println!("branch name error: {}", e);
-            is_valid = false;
-        }
-    };
+    let branch_name = branch.name().ok()??.to_string();
 
     let reference = branch.get();
-
     let ref_name = reference.name()?.to_string();
+
+    let mut is_current_branch = false;
     if let Some(current) = head_branch_refname {
         is_current_branch = ref_name == current.as_str();
     }
 
-    match reference.peel_to_commit() {
-        Ok(commit) => {
-            commit_sha = commit.id().to_string();
-            time_seconds = commit.time().seconds();
-            offset_minutes = commit.time().offset_minutes();
-            if let Some(s) = commit.summary() {
-                summary = s.to_string();
-            }
-            author_name = commit.author().name()?.to_string();
-        }
-        Err(e) => {
-            println!("error getting commit: {}", e);
-            is_valid = false;
-        }
-    }
+    let commit = reference.peel_to_commit().ok()?;
+    let commit_sha = commit.id().to_string();
+    let time_seconds = commit.time().seconds();
+    let offset_minutes = commit.time().offset_minutes();
+    let summary = commit.summary()?.to_string();
+    let author_name = commit.author().name()?.to_string();
 
-    if is_valid {
-        let record = BranchRecord {
-            name: branch_name,
-            commit_sha,
-            time_seconds,
-            offset_minutes,
-            summary,
-            ref_name,
-            author_name,
-            is_current_branch,
-        };
-        Some(record)
-    } else {
-        None
-    }
+    let record = BranchRecord {
+        name: branch_name,
+        commit_sha,
+        time_seconds,
+        offset_minutes,
+        summary,
+        ref_name,
+        author_name,
+        is_current_branch,
+    };
+    Some(record)
 }
 
 fn get_current_branch_refname(repo: &Repository) -> Option<String> {
