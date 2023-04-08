@@ -106,7 +106,7 @@ pub fn extract_local_branches(repo: &Repository) -> Vec<BranchRecord> {
                             records.push(record)
                         }
                     }
-                    Err(e) => println!("error in branch: {}", e),
+                    Err(e) => println!("error in branch: {e}"),
                 }
             }
         }

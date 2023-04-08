@@ -18,8 +18,8 @@ fn handle_selected_branch(repo: &Repository, branch_record: Option<&BranchRecord
             }
 
             println!("Switching to branch '{}'", branch_record.name);
-            if let Err(e) = checkout_branch(&repo, &branch_record) {
-                println!("Failed to checkout branch: {}", e);
+            if let Err(e) = checkout_branch(repo, branch_record) {
+                println!("Failed to checkout branch: {e}");
                 println!("Please commit your changes or stash them before you switch branches.");
                 exit(1);
             };
@@ -48,7 +48,7 @@ fn main() {
     match render_branch_selection(&mut branch_table) {
         Ok(res) => handle_selected_branch(&repo, res),
         Err(e) => {
-            println!("error rendering branch selection: {}", e);
+            println!("error rendering branch selection: {e}");
             exit(1);
         }
     };

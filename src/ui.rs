@@ -20,7 +20,7 @@ pub struct BranchTable<'a> {
 
 impl<'a> BranchTable<'a> {
     pub fn new(records: &'a [BranchRecord]) -> BranchTable<'a> {
-        let (data, header) = get_table_data_from_branch_records(&records);
+        let (data, header) = get_table_data_from_branch_records(records);
         BranchTable {
             state: TableState::default(),
             items: data,
