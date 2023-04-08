@@ -1,6 +1,6 @@
 [package]
 name = "git-checkout-recent"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Yung Siang Liau <liauys@gmail.com>"]
 license = "MIT"
 description = "A tool to switch between recent local git branches easily"
