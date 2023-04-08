@@ -47,7 +47,6 @@ fn parse_local_branch(
     branch: &Branch,
     head_branch_refname: &Option<String>,
 ) -> Option<BranchRecord> {
-
     let branch_name = branch.name().ok()??.to_string();
 
     let reference = branch.get();
