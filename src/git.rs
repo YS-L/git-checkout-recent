@@ -1,19 +1,16 @@
 use std::fmt;
 
+use chrono::DateTime;
 use git2::Branch;
 use git2::BranchType;
 use git2::Repository;
 
-use chrono::offset::FixedOffset;
-use chrono::offset::TimeZone;
-use chrono::NaiveDateTime;
 use chrono_humanize::HumanTime;
 
 pub struct BranchRecord {
     pub name: String,
     pub commit_sha: String,
     pub time_seconds: i64,
-    pub offset_minutes: i32,
     pub summary: String,
     pub ref_name: String,
     pub author_name: String,
@@ -22,11 +19,11 @@ pub struct BranchRecord {
 
 impl BranchRecord {
     pub fn pretty_format_date(&self) -> String {
-        let naive_dt = NaiveDateTime::from_timestamp(self.time_seconds, 0);
-        let offset = FixedOffset::east(self.offset_minutes * 60);
-        let dt = offset.from_utc_datetime(&naive_dt);
-        let humanized_dt = HumanTime::from(dt);
-        humanized_dt.to_string()
+        if let Some(dt) = DateTime::from_timestamp(self.time_seconds, 0) {
+            HumanTime::from(dt).to_string()
+        } else {
+            "unknown".to_string()
+        }
     }
 }
 
@@ -60,7 +57,6 @@ fn parse_local_branch(
     let commit = reference.peel_to_commit().ok()?;
     let commit_sha = commit.id().to_string();
     let time_seconds = commit.time().seconds();
-    let offset_minutes = commit.time().offset_minutes();
     let summary = commit.summary()?.to_string();
     let author_name = commit.author().name()?.to_string();
 
@@ -68,7 +64,6 @@ fn parse_local_branch(
         name: branch_name,
         commit_sha,
         time_seconds,
-        offset_minutes,
         summary,
         ref_name,
         author_name,
